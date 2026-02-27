@@ -1,0 +1,26 @@
+{
+  "name": "Bit_talk",
+  "short_name": "Bit_talk",
+  "description": "Fully decentralized peer-to-peer vertical video sharing",
+  "start_url": "/Bit_talk/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["social", "entertainment"],
+  "lang": "en"
+}
