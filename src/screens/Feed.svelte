@@ -12,6 +12,7 @@
   import { rankVideos, buildEmptyContext, computeTopicAffinities } from '../core/algorithm'
   import { navigate } from '../router'
   import type { StoredVideo } from '../core/storage'
+  import { SEED_VIDEOS } from '../core/seedVideos'
 
   let containerEl: HTMLElement
   let unsubFeed: (() => void) | null = null
@@ -58,6 +59,12 @@
   onMount(async () => {
     feedLoading.set(true)
     feedError.set(null)
+
+    // Seed the feed immediately with public-domain demo videos so users
+    // see content right away while Nostr relays are still connecting.
+    for (const video of SEED_VIDEOS) {
+      addRawVideo(video)
+    }
 
     const myPubkey = $identity?.pk ?? ''
     const follows = myPubkey ? await getCachedFollows(myPubkey) : []
