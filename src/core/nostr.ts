@@ -26,7 +26,9 @@ export async function initNDK(signer?: NDKSigner): Promise<NDK> {
     return _ndk
   }
 
+  console.log('[NDK] loading settings…')
   const settings = await loadAppSettings()
+  console.log('[NDK] relays:', settings.relays)
 
   _ndk = new NDK({
     explicitRelayUrls: settings.relays,
@@ -35,7 +37,21 @@ export async function initNDK(signer?: NDKSigner): Promise<NDK> {
     autoFetchUserMutelist: false,
   })
 
-  await _ndk.connect(3000)
+  // connect() can hang indefinitely when WebSockets are blocked.
+  // We race it against a 4-second hard timeout so the app always boots.
+  console.log('[NDK] connecting to relays…')
+  try {
+    await Promise.race([
+      _ndk.connect(3000),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('NDK connect timeout')), 4000)
+      ),
+    ])
+    console.log('[NDK] connected')
+  } catch (err) {
+    console.warn('[NDK] relay connect failed or timed out — continuing offline:', err)
+  }
+
   return _ndk
 }
 

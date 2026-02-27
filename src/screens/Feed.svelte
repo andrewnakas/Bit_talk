@@ -63,29 +63,34 @@
   }
 
   onMount(async () => {
+    console.log('[Feed] mount start')
     feedLoading.set(true)
     feedError.set(null)
 
     // Seed the feed immediately with public-domain demo videos.
-    // We bypass the async $effect → rerankFeed chain by populating feedVideos
-    // directly so the loading bar clears on the same tick.
+    console.log('[Feed] injecting', SEED_VIDEOS.length, 'seed videos')
     for (const video of SEED_VIDEOS) {
       addRawVideo(video)
     }
     feedVideos.set([...SEED_VIDEOS])
     feedLoading.set(false)
+    console.log('[Feed] seed videos set, feedLoading=false')
 
     const myPubkey = $identity?.pk ?? ''
+    console.log('[Feed] subscribing to Nostr feed, pubkey:', myPubkey.slice(0, 8) || '(anon)')
     const follows = myPubkey ? await getCachedFollows(myPubkey) : []
+    console.log('[Feed] follows count:', follows.length)
 
     // Subscribe to videos from follows + global discovery
     unsubFeed = subscribeToVideoFeed({
       follows: follows.length > 0 ? follows : undefined,
       limit: 50,
       onEvent: (video) => {
+        console.log('[Feed] Nostr video received:', video.title)
         addRawVideo(video)
       },
     })
+    console.log('[Feed] Nostr subscription active')
 
     // If no videos come in after 5s, show a hint
     setTimeout(() => {

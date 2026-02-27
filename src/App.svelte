@@ -21,28 +21,34 @@
   const BARE_ROUTES = new Set(['login'])
 
   onMount(async () => {
+    console.log('[App] boot start')
     try {
       // 1. Load algorithm weights from IndexedDB
+      console.log('[App] loading weights…')
       await loadWeights()
+      console.log('[App] weights loaded')
 
       // 2. Load or create identity
+      console.log('[App] loading identity…')
       const id = await loadOrCreateIdentity()
       identity.set(id)
+      console.log('[App] identity ready, pk:', id.pk.slice(0, 8) + '…')
 
       // 3. Initialize NDK with signer
+      console.log('[App] init NDK…')
       if (id.sk.length > 0) {
         const signer = new NDKPrivateKeySigner(id.sk)
         await initNDK(signer)
       } else {
-        // NIP-07 user — NDK init without signer (or already inited from login screen)
         await initNDK()
       }
+      console.log('[App] NDK ready')
     } catch (err) {
       console.error('[App] boot error:', err)
-      // Still navigate to login on critical failure
       navigate('login')
     } finally {
       booting = false
+      console.log('[App] booting=false, rendering app')
     }
   })
 </script>
