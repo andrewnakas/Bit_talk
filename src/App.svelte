@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import NavBar from './components/NavBar.svelte'
+  import DebugConsole from './components/DebugConsole.svelte'
   import Feed from './screens/Feed.svelte'
   import Upload from './screens/Upload.svelte'
   import Profile from './screens/Profile.svelte'
@@ -45,6 +46,8 @@
     }
   })
 </script>
+
+<DebugConsole />
 
 {#if booting}
   <!-- Loading handled by inline HTML spinner in index.html -->
