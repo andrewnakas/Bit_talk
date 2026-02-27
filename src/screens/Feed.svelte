@@ -28,43 +28,52 @@
   })
 
   async function rerankFeed(videos: StoredVideo[], weights: any) {
-    const myPubkey = $identity?.pk ?? ''
-    const follows = myPubkey ? await getCachedFollows(myPubkey) : []
-    const history = await getWatchHistory()
-    const likedSet = await getLikedEventIds()
-    likedIds = likedSet
+    try {
+      const myPubkey = $identity?.pk ?? ''
+      const follows = myPubkey ? await getCachedFollows(myPubkey) : []
+      const history = await getWatchHistory()
+      const likedSet = await getLikedEventIds()
+      likedIds = likedSet
 
-    const topicAffinities = computeTopicAffinities(
-      history.map(h => {
-        const video = videos.find(v => v.eventId === h.eventId)
-        return {
-          hashtags: video?.hashtags ?? [],
-          watchDuration: h.watchDuration,
-          totalDuration: h.totalDuration,
-        }
-      })
-    )
+      const topicAffinities = computeTopicAffinities(
+        history.map(h => {
+          const video = videos.find(v => v.eventId === h.eventId)
+          return {
+            hashtags: video?.hashtags ?? [],
+            watchDuration: h.watchDuration,
+            totalDuration: h.totalDuration,
+          }
+        })
+      )
 
-    const ctx = buildEmptyContext()
-    ctx.follows = new Set(follows)
-    ctx.watchedIds = new Set(history.filter(h => h.watchDuration / h.totalDuration > 0.8).map(h => h.eventId))
-    ctx.topicAffinities = topicAffinities
-    ctx.likedIds = likedSet
+      const ctx = buildEmptyContext()
+      ctx.follows = new Set(follows)
+      ctx.watchedIds = new Set(history.filter(h => h.watchDuration / h.totalDuration > 0.8).map(h => h.eventId))
+      ctx.topicAffinities = topicAffinities
+      ctx.likedIds = likedSet
 
-    const ranked = rankVideos(videos, weights, ctx, $engagementData)
-    feedVideos.set(ranked)
-    feedLoading.set(false)
+      const ranked = rankVideos(videos, weights, ctx, $engagementData)
+      feedVideos.set(ranked)
+    } catch (err) {
+      console.error('[Feed] rerankFeed error:', err)
+      feedVideos.set(videos)
+    } finally {
+      feedLoading.set(false)
+    }
   }
 
   onMount(async () => {
     feedLoading.set(true)
     feedError.set(null)
 
-    // Seed the feed immediately with public-domain demo videos so users
-    // see content right away while Nostr relays are still connecting.
+    // Seed the feed immediately with public-domain demo videos.
+    // We bypass the async $effect → rerankFeed chain by populating feedVideos
+    // directly so the loading bar clears on the same tick.
     for (const video of SEED_VIDEOS) {
       addRawVideo(video)
     }
+    feedVideos.set([...SEED_VIDEOS])
+    feedLoading.set(false)
 
     const myPubkey = $identity?.pk ?? ''
     const follows = myPubkey ? await getCachedFollows(myPubkey) : []
