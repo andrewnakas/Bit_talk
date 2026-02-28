@@ -44,14 +44,31 @@
     if (!videoEl) return
     loading = true
     streamError = null
+
+    // If a direct HTTP URL is available, use it — no WebTorrent/WebRTC needed.
+    if (video.directURL) {
+      console.log('[VideoPlayer] using directURL for', video.title)
+      videoEl.src = video.directURL
+      videoEl.load()
+      videoEl.oncanplay = () => { loading = false }
+      videoEl.onerror = () => {
+        console.warn('[VideoPlayer] directURL load error for', video.title)
+        streamError = 'Could not load video'
+        loading = false
+      }
+      return
+    }
+
+    // Fall back to WebTorrent P2P for user-uploaded content.
+    console.log('[VideoPlayer] starting WebTorrent stream for', video.title)
     try {
       streamCleanup = await streamToElement(video.magnetURI, videoEl, state => {
         progress = state.progress
         numPeers = state.numPeers
         if (state.ready) loading = false
       })
-      // Short timeout: if no peers after 30s, the callback inside streamToElement will reject
     } catch (err: any) {
+      console.warn('[VideoPlayer] streamToElement error:', err?.message)
       streamError = err?.message ?? 'Could not load video'
       loading = false
     }
@@ -65,6 +82,8 @@
     if (videoEl) {
       videoEl.pause()
       videoEl.src = ''
+      videoEl.oncanplay = null
+      videoEl.onerror = null
     }
   }
 

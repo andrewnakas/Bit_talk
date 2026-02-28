@@ -27,6 +27,13 @@ function getClient(): any {
   _client.on('error', (err: Error) => {
     console.error('[WebTorrent] client error:', err.message)
   })
+  // WebTorrent internally uses WebRTC; some browsers throw NotSupportedError
+  // when a specific RTC operation isn't available. Catch it here so it doesn't
+  // surface as a cryptic unhandledrejection.
+  _client.on('warning', (warn: Error | string) => {
+    console.warn('[WebTorrent] warning:', typeof warn === 'string' ? warn : warn.message)
+  })
+  console.log('[WebTorrent] client created')
   return _client
 }
 

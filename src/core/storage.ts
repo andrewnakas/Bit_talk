@@ -43,6 +43,7 @@ export interface StoredVideo {
   title: string
   summary: string
   magnetURI: string
+  directURL?: string   // optional HTTP URL — used instead of WebTorrent when present
   thumbnail?: string   // data URL or IPFS CID
   duration?: number    // seconds
   dimensions?: string  // e.g. "1080x1920"
