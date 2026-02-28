@@ -48,14 +48,15 @@
     // If a direct HTTP URL is available, use it — no WebTorrent/WebRTC needed.
     if (video.directURL) {
       console.log('[VideoPlayer] using directURL for', video.title)
-      videoEl.src = video.directURL
-      videoEl.load()
-      videoEl.oncanplay = () => { loading = false }
       videoEl.onerror = () => {
         console.warn('[VideoPlayer] directURL load error for', video.title)
         streamError = 'Could not load video'
-        loading = false
       }
+      videoEl.src = video.directURL
+      loading = false  // clear spinner immediately; browser handles buffering natively
+      videoEl.play().catch(() => {
+        // autoplay blocked — user can tap to play; onerror handles broken URLs
+      })
       return
     }
 
@@ -82,7 +83,6 @@
     if (videoEl) {
       videoEl.pause()
       videoEl.src = ''
-      videoEl.oncanplay = null
       videoEl.onerror = null
     }
   }
@@ -232,7 +232,8 @@
   .video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: #000;
   }
 
   .overlay-center {
