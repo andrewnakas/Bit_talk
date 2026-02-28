@@ -18,21 +18,28 @@
   let unsubFeed: (() => void) | null = null
   let likedIds = $state<Set<string>>(new Set())
   let commentOpenFor = $state<string | null>(null)
+  let rankSeq = 0
 
-  // Re-rank whenever raw videos or weights change
+  // Re-rank whenever raw videos or weights change.
+  // Skip while user has scrolled into the feed to avoid reordering cards mid-watch.
   $effect(() => {
     const videos = $rawVideos
     const weights = $algorithmWeights
     if (videos.length === 0) return
+    if ($currentIndex > 0) return
     rerankFeed(videos, weights)
   })
 
   async function rerankFeed(videos: StoredVideo[], weights: any) {
+    const seq = ++rankSeq
     try {
       const myPubkey = $identity?.pk ?? ''
       const follows = myPubkey ? await getCachedFollows(myPubkey) : []
+      if (seq !== rankSeq) return
       const history = await getWatchHistory()
+      if (seq !== rankSeq) return
       const likedSet = await getLikedEventIds()
+      if (seq !== rankSeq) return
       likedIds = likedSet
 
       const topicAffinities = computeTopicAffinities(
@@ -53,12 +60,14 @@
       ctx.likedIds = likedSet
 
       const ranked = rankVideos(videos, weights, ctx, $engagementData)
+      if (seq !== rankSeq) return
       feedVideos.set(ranked)
     } catch (err) {
+      if (seq !== rankSeq) return
       console.error('[Feed] rerankFeed error:', err)
       feedVideos.set(videos)
     } finally {
-      feedLoading.set(false)
+      if (seq === rankSeq) feedLoading.set(false)
     }
   }
 

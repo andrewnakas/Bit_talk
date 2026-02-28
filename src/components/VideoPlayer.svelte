@@ -30,13 +30,24 @@
   let streamError = $state<string | null>(null)
   let loading = $state(true)
   let showStats = $state(false)
+  let isMuted = $state(true)
+  // Tracks which video eventId is currently streaming so we skip duplicate startStream calls
+  // when feedVideos updates object references without actually changing the video.
+  let streamingId = $state<string | null>(null)
 
-  // Load / unload torrent based on whether this card is active
+  // Load / unload stream based on whether this card is active.
+  // Guard: only call startStream when the active video actually changes (by eventId).
   $effect(() => {
     if (active) {
-      startStream()
+      if (video.eventId !== streamingId) {
+        streamingId = video.eventId
+        startStream()
+      }
     } else {
-      stopStream()
+      if (streamingId !== null) {
+        streamingId = null
+        stopStream()
+      }
     }
   })
 
@@ -133,9 +144,21 @@
       playsinline
       loop
       autoplay={active}
-      muted={false}
+      muted={isMuted}
       preload="none"
     ></video>
+
+    <!-- Muted indicator — tap to unmute -->
+    {#if isMuted}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="muted-badge" onclick={(e) => { e.stopPropagation(); isMuted = false }}>
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px">
+          <path d="M5.889 16H2a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3.889l5.294-4.332A.5.5 0 0 1 12 4.138V19.86a.5.5 0 0 1-.817.332L5.89 16zm13.517-7.364a1 1 0 0 1 0 1.414l-1.414 1.414 1.414 1.414a1 1 0 0 1-1.414 1.414l-1.414-1.414-1.414 1.414a1 1 0 0 1-1.414-1.414l1.414-1.414-1.414-1.414a1 1 0 0 1 1.414-1.414l1.414 1.414 1.414-1.414a1 1 0 0 1 1.414 0z"/>
+        </svg>
+        <span>Tap to unmute</span>
+      </div>
+    {/if}
 
     {#if loading && !streamError}
       <div class="overlay-center">
@@ -234,6 +257,25 @@
     height: 100%;
     object-fit: contain;
     background: #000;
+  }
+
+  .muted-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+    z-index: 15;
+    user-select: none;
   }
 
   .overlay-center {
